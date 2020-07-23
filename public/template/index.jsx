@@ -5,8 +5,10 @@ import {connect} from "react-redux";
 
 import {
     getTaskList,
-    getTaskDetailById
 } from '../../service/commondata'
+
+import DemoSearch from '../../component/demoList/demoSearch'
+import DemoModal from '../../component/demoList/demoModal'
 
 import './demoList.scss';
 
@@ -34,6 +36,10 @@ function demoList({language, lang}) {
         totalRows: 0
     })
     const [taskTableLoading, setTaskTableLoading] = useState(false)
+    const [modalData, setModalData] = useState({
+        visible: false,
+        formData: ''
+    })
 
     const columns =  [
         {{each }} {{ each $value.tableData }}
@@ -42,12 +48,14 @@ function demoList({language, lang}) {
              dataIndex: '{{$value.key}}',
              key: '{{$value.key}}',
              ellipsis: true,
+             width: '200px',
              sorter: true,
          },
         {{ /each}} {{ /each }}
         {
             title: '操作',
             key: 'action',
+            width: '100px',
             render: (text, record) => (
             <Button type='link' style={ {paddingLeft: 0} }
                     onClick={() => handleUpdate(record)}>修改</Button>
@@ -117,14 +125,10 @@ function demoList({language, lang}) {
      * @param {*} row
      */
     function handleUpdate(row) {
-        let updateScheduledTaskInfo = ''
-        let parms = {
-            taskId: row.taskId
-        }
-        getTaskDetailById(parms, res => {
-            if (res.data.code == 0) {
-                updateScheduledTaskInfo = res.data.data
-            }
+        setModalData({
+            ...modalData,
+            formData: row,
+            visible: true
         })
     }
 
@@ -142,11 +146,28 @@ function demoList({language, lang}) {
         setTaskListParams(tempTaskListParams)
     }
 
+    /**
+     * 表单提交
+     * @param {*} value
+     */
+    function submitFormData(value){
+        console.log(value)
+    }
+
+    /**
+     * 条件查询
+     * @param value
+     */
+    function filterSearch(value){
+        console.log(value)
+    }
+
     return (
         <React.Fragment>
             <div className="taskManager">
+                <DemoSearch filterSearch={filterSearch} />
                 <div className="modeButtonRow">
-                    <Button type="primary">新建</Button>
+                    <Button type="primary" onClick={() => setModalData({ ...modalData, visible: true })}>新建</Button>
                     <Button type="danger">删除</Button>
                     <Radio.Group onChange={(e) => handleChangeStatusSearch(e.target.value)} defaultValue=""
                                  className="modeRadio">
@@ -188,6 +209,9 @@ function demoList({language, lang}) {
                 </div>
 
             </div>
+            {   modalData.visible &&
+                <DemoModal  modalData={modalData} closeFormModal ={()=> setModalData({...modalData,visible: false,formData:''})} submitFormData={submitFormData} />
+            }
             <BackTop style={ {right: '50px', bottom: '20px'} }/>
         </React.Fragment>
     )
