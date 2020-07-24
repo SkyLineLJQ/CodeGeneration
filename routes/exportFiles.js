@@ -4,7 +4,7 @@ var xlsx = require('node-xlsx');
 var template = require('art-template');
 var router = express.Router();
 
-router.post('/getFilesDemo', function (req, res, next) {
+router.post('/setFilesDirect', function (req, res, next) {
     let sheets = xlsx.parse('./resource/excel.xlsx');
     sheets.forEach(function (sheet) {
         console.log(sheet['name']);
@@ -51,15 +51,42 @@ router.post('/getFilesDemo2', function (req, res, next) {
 router.post('/getFiles', async function (req, res, next) {
     // 读取excel
     let resFiles = await getExcelFile('./resource/excel.xlsx')
-    // 读取模板
-    let templateResource = await getTemplate('./public/template/search.jsx')
-    const strHtml = template.render(templateResource, resFiles)
-    // 输出 Manger主文件
-    fs.writeFile("./out/"+ resFiles[0].taleName +"Search.jsx", strHtml, err => {
-        if (err) {
-            console.log(err)
-            throw err
-        }
+    // 创建生成文件目录
+    await createRootDirect()
+    // 创建模块子目录
+    await createChildrenDirect(resFiles)
+    // 读取List模板
+    let templateList = await getTemplate('./public/template/index.jsx')
+    // 读取search 模板
+    let templateSearch = await getTemplate('./public/template/search.jsx')
+    // 读取modal 模板
+    let templateModal = await getTemplate('./public/template/modal.jsx')
+
+    resFiles.forEach(item=>{
+        const strHtmlList = template.render(templateList, [item])
+        // 输出 Manger主文件
+        fs.writeFile("./out/"+ item.taleName + '/' +  item.taleName +"List.jsx", strHtmlList, err => {
+            if (err) {
+                console.log(err)
+                throw err
+            }
+        })
+        // 输出 search 文件
+        const strHtmlSearch = template.render(templateSearch,[item])
+        fs.writeFile("./out/"+ item.taleName + '/' +  item.taleName +"Search.jsx", strHtmlSearch, err => {
+            if (err) {
+                console.log(err)
+                throw err
+            }
+        })
+        // 输出modal 文件
+        const strHtmlModal = template.render(templateModal,[item])
+        fs.writeFile("./out/"+ item.taleName + '/' +  item.taleName +"Modal.jsx", strHtmlModal, err => {
+            if (err) {
+                console.log(err)
+                throw err
+            }
+        })
     })
     res.send({
         code: 0,
@@ -102,6 +129,33 @@ function getTemplate(root) {
             }
             resolve(data.toString())
         })
+    })
+}
+
+function createRootDirect(){
+    return new Promise((resolve,reject)=>{
+        fs.mkdir('./out',function (err) {
+            if(err) return;
+            console.info('输出目录创建成功...')
+            resolve(true)
+        })
+    })
+}
+
+function createChildrenDirect(resFiles){
+    return new Promise((resolve,reject)=>{
+        resFiles.forEach(item=>{
+            fs.mkdir('./out/'+item.taleName,function (err) {
+                if(err){
+                    console.error(err)
+                    return ;
+                }
+                console.info('创建子目录'+ item.taleName +'...')
+            })
+        })
+        setTimeout(()=>{
+            resolve(true)
+        },500)
     })
 }
 
